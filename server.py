@@ -8,4 +8,3 @@ args = parser.parse_args()
 PORT = args.port or 8080
 
 if __name__ == "__main__":
-    Thread(target=server.server_forever).start()
