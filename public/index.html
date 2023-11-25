@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>文件管理器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #e8f4fd; /* 浅蓝色背景 */
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 10px;
+      background-color: #fcf8e3; /* 浅黄色底色 */
+      border-radius: 4px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    a {
+      text-decoration: none;
+      color: #333;
+      transition: color 0.3s ease;
+    }
+
+    a:hover {
+      color: #1e90ff;
+    }
+
+    button {
+      background-color: #f7e8b0; /* 淡黄色按钮背景 */
+      color: #333;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #f2d680; /* 深黄色按钮背景 */
+    }
+
+    .current-path {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width: 600px; margin: 0 auto;">
+    <h1>文件管理器</h1>
+    <div class="current-path">当前目录: /path/to/current/folder</div>
+    <ul id="file-list"></ul>
+  </div>
+
+  <script>
+    // 文件数据
+    var files = [
+      { name: '文件1.txt', path: 'files/文件1.txt' },
+      { name: '文件2.jpg', path: 'files/文件2.jpg' },
+      { name: '文件3.pdf', path: 'files/文件3.pdf' }
+    ];
+
+    // 生成文件列表
+    var fileList = document.getElementById('file-list');
+
+    files.forEach(function(file) {
+      var listItem = document.createElement('li');
+      var link = document.createElement('a');
+      link.href = file.path;
+      link.textContent = file.name;
+      listItem.appendChild(link);
+      fileList.appendChild(listItem);
+    });
+  </script>
+</body>
+</html>
