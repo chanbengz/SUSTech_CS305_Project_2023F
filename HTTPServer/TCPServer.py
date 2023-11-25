@@ -24,7 +24,7 @@ class Server:
 
     def __init__(self, server_address, RequestHandler):
         self.server_address = server_address
-        self.RequestHandlerClass = RequestHandler
+        self.RequestHandler = RequestHandler
         self.__is_shut_down = Event()
         self.__shutdown_request = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,7 +33,7 @@ class Server:
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             self.socket.bind(self.server_address)
             self.server_address = self.socket.getsockname()
-            self.socket.listen(10) # Allow the maximum Concurrent Connections
+            self.socket.listen(10) # Allow the maximum Concurrent
         except:
             self.server_close()
             raise
@@ -121,10 +121,7 @@ class Server:
         self.shutdown_request(request)
 
     def finish_request(self, request, client_address):
-        self.RequestHandlerClass(request, client_address, self)
-
-    def shutdown_request(self, request):
-        self.close_request(request)
+        self.RequestHandler(request, client_address, self)
 
     def __enter__(self):
         return self
