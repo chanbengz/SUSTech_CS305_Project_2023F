@@ -8,6 +8,15 @@ class TCPServer:
         self.RequestHandlerClass = RequestHandlerClass
         self.__is_shut_down = threading.Event()
         self.__shutdown_request = False
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.socket.bind(self.server_address)
+            self.server_address = self.socket.getsockname()
+            self.socket.listen(100)
+        except:
+            self.server_close()
+            raise
 
     def serve_forever(self, poll_interval=0.5):
         self.__is_shut_down.clear()
@@ -27,7 +36,6 @@ class TCPServer:
     def shutdown(self):
         self.__shutdown_request = True
         self.__is_shut_down.wait()
-    
     def handle_request(self):
         timeout = self.socket.gettimeout()
         if timeout is None:
@@ -76,28 +84,6 @@ class TCPServer:
             client_address, file=sys.stderr)
         traceback.print_exc()
         print('-'*40, file=sys.stderr)
-    
-    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
-        self.server_address = server_address
-        self.RequestHandlerClass = RequestHandlerClass
-        self.__is_shut_down = threading.Event()
-        self.__shutdown_request = False
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if bind_and_activate:
-            try:
-                self.server_bind()
-                self.server_activate()
-            except:
-                self.server_close()
-                raise
-
-    def server_bind(self):
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind(self.server_address)
-        self.server_address = self.socket.getsockname()
-
-    def server_activate(self):
-        self.socket.listen(100)
 
     def server_close(self):
         self.socket.close()
@@ -139,18 +125,8 @@ class _Threads(list):
     def reap(self):
         self[:] = (thread for thread in self if thread.is_alive())
 
-
-class _NoThreads:
-    def append(self, thread):
-        pass
-    def join(self):
-        pass
-
-
 class ThreadingMixIn:
-    daemon_threads = False
-    block_on_close = True
-    _threads = _NoThreads()
+    _threads = _Threads()
 
     def process_request_thread(self, request, client_address):
         try:
@@ -161,11 +137,9 @@ class ThreadingMixIn:
             self.shutdown_request(request)
 
     def process_request(self, request, client_address):
-        if self.block_on_close:
-            vars(self).setdefault('_threads', _Threads())
         t = threading.Thread(target = self.process_request_thread,
                              args = (request, client_address))
-        t.daemon = self.daemon_threads
+        t.daemon = False
         self._threads.append(t)
         t.start()
 
@@ -173,4 +147,4 @@ class ThreadingMixIn:
         super().server_close()
         self._threads.join()
 
-class Server(ThreadingMixIn, TCPServer): pass
+class ThreadingServer(ThreadingMixIn, TCPServer): pass

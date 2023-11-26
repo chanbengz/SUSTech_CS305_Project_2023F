@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from threading import Thread
-from HTTPServer.TCPServer import Server
+from HTTPServer.TCPServer import ThreadingServer
 from HTTPServer.RequestHandle import *
 import time, socket, uuid, base64, re, mimetypes, pathlib, json, signal
 import sqlite3 as sql
@@ -68,11 +68,14 @@ class RequestHandler:
                     con.sendall(parse_header(headers, 401) + b'WWW-Authenticate: Basic realm="Authorization Required"\r\n\r\n')
                     continue
             else:
-                duration = 3600
-                for result in cookie_database.execute(f"select * from cookies where session_id = '{headers['Cookie'].strip('session-id=')}';"):
-                    duration = int(time.time()) - result[2]
-                if duration > 3600:
-                    cookie_database.execute(f"delete from cookies where session_id = '{headers['Cookie'].strip('session-id=')}';")
+                try:
+                    duration = 3600
+                    for result in cookie_database.execute(f"select * from cookies where session_id = '{headers['Cookie'].strip('session-id=')}';"):
+                        duration = int(time.time()) - result[2]
+                    if duration >= 3600:
+                        cookie_database.execute(f"delete from cookies where session_id = '{headers['Cookie'].strip('session-id=')}';")
+                        raise
+                except:
                     con.sendall(parse_header(headers, 401) + b'WWW-Authenticate: Basic realm="Authorization Required"\r\n\r\n')
                     continue
             user_database.close()
@@ -92,5 +95,5 @@ class RequestHandler:
                 return
 
 if __name__ == "__main__":
-    server = Server((IP, PORT), RequestHandler)
+    server = ThreadingServer((IP, PORT), RequestHandler)
     Thread(target=server.serve_forever).start()
