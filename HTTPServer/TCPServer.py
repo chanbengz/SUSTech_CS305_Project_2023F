@@ -33,7 +33,7 @@ class Server:
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             self.socket.bind(self.server_address)
             self.server_address = self.socket.getsockname()
-            self.socket.listen(10) # Allow the maximum Concurrent
+            self.socket.listen(100) # Allow the maximum Concurrent
         except:
             self.server_close()
             raise
@@ -61,9 +61,6 @@ class Server:
             request.shutdown(socket.SHUT_WR)
         except OSError:
             pass
-        self.close_request(request)
-
-    def close_request(self, request):
         request.close()
 
     def serve_forever(self, poll_interval=0.5):

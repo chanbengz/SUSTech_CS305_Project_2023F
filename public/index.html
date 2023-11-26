@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>文件管理器</title>
+  <title>HTTP File Manager</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background-color: #e8f4fd; /* 浅蓝色背景 */
+      background-color: #e8f4fd;
     }
 
     h1 {
@@ -22,7 +22,7 @@
 
     li {
       margin-bottom: 10px;
-      background-color: #fcf8e3; /* 浅黄色底色 */
+      background-color: #fcf8e3;
       border-radius: 4px;
       padding: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -39,7 +39,7 @@
     }
 
     button {
-      background-color: #f7e8b0; /* 淡黄色按钮背景 */
+      background-color: #f7e8b0;
       color: #333;
       border: none;
       padding: 8px 12px;
@@ -50,7 +50,7 @@
     }
 
     button:hover {
-      background-color: #f2d680; /* 深黄色按钮背景 */
+      background-color: #f2d680;
     }
 
     .current-path {
@@ -62,20 +62,18 @@
 </head>
 <body>
   <div style="max-width: 600px; margin: 0 auto;">
-    <h1>文件管理器</h1>
-    <div class="current-path">当前目录: /path/to/current/folder</div>
+    <h1>File Manager</h1>
+    <div class="current-path">Current Directory: /path/to/current/folder</div>
     <ul id="file-list"></ul>
   </div>
 
   <script>
-    // 文件数据
     var files = [
-      { name: '文件1.txt', path: 'files/文件1.txt' },
-      { name: '文件2.jpg', path: 'files/文件2.jpg' },
-      { name: '文件3.pdf', path: 'files/文件3.pdf' }
+      { name: 'Example1.txt', path: 'files/Example1.txt' },
+      { name: 'Example2.jpg', path: 'files/Example1.jpg' },
+      { name: 'Example3.pdf', path: 'files/Example1.pdf' }
     ];
 
-    // 生成文件列表
     var fileList = document.getElementById('file-list');
 
     files.forEach(function(file) {
