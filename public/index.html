@@ -59,8 +59,13 @@
       margin-bottom: 10px;
     }
 
+    .button-container {
+      display: flex;
+      justify-content: flex-end;
+    }
+
     .upload-button {
-      position: fixed;
+      position: absolute;
       top: 6%;
       left: 850px; /* Adjusted position */
       transform: translate(-50%, -50%);
@@ -84,7 +89,23 @@
     .upload-button input[type="file"] {
       display: none;
     }
-  </style>
+
+    .file-button {
+      background-color: #c6e5cc; /* Light green button background */
+      color: #333;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-right: 5px;
+    }
+
+    .file-button:hover {
+      background-color: #a0d8a9; /* Dark green button background */
+    }
+</style>
 </head>
 <body>
   <div style="max-width: 600px; margin: 0 auto;">
@@ -103,6 +124,24 @@
     var files = [
       { name: 'File1.txt', path: 'files/File1.txt' },
       { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' },
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' },
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' },
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' },
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' },
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' },
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
       { name: 'File3.pdf', path: 'files/File3.pdf' }
     ];
 
@@ -112,9 +151,32 @@
     files.forEach(function(file) {
       var listItem = document.createElement('li');
       var link = document.createElement('a');
-      link.href = file.path;
       link.textContent = file.name;
       listItem.appendChild(link);
+
+      var buttonContainer = document.createElement('div');
+      buttonContainer.className = 'button-container';
+
+      var downloadButton = document.createElement('button');
+      downloadButton.className = 'file-button';
+      downloadButton.textContent = 'Download';
+      downloadButton.addEventListener('click', function() {
+        // TODO: Implement download functionality
+        alert('Download button clicked for file: ' + file.name);
+      });
+      buttonContainer.appendChild(downloadButton);
+
+      var deleteButton = document.createElement('button');
+      deleteButton.className = 'file-button';
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', function() {
+        // TODO: Implement delete functionality
+        alert('Delete button clicked for file: ' + file.name);
+      });
+      buttonContainer.appendChild(deleteButton);
+
+      listItem.appendChild(buttonContainer);
+
       fileList.appendChild(listItem);
     });
 
