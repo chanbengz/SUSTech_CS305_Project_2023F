@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from threading import Thread
 from HTTPServer.TCPServer import ThreadingServer
 from HTTPServer.RequestHandle import *
-import time, socket, uuid, base64, re, mimetypes, pathlib, json, signal
+import time, socket, uuid, base64
 import sqlite3 as sql
 
 parser = ArgumentParser()
@@ -31,6 +31,7 @@ class RequestHandler:
                     data = con.recv(1024)
                     recv_data += data
                     if len(data) < 1024:
+                        con.settimeout(None)
                         break
                 if recv_data == b'':
                     continue
@@ -45,7 +46,7 @@ class RequestHandler:
                 con.sendall(parse_header(headers, 505))
                 continue
 
-            # Authentication
+            # Authentication and Cookie
             user_database = sql.connect('Database/users.db')
             cookie_database = sql.connect('Database/cookies.db')
             if 'Cookie' not in headers:

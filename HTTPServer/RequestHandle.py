@@ -19,6 +19,10 @@ status_code = {
 }
 maxconnect = 100
 timeout = 120
+command = [
+    'upload',
+    'delete'
+]
 
 def parse_header(headers, code):
     res_header = ''
