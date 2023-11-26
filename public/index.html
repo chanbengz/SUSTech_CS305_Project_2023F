@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>HTTP File Manager</title>
+  <title>File Manager</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background-color: #e8f4fd;
+      background-color: #e8f4fd; /* Light blue background */
     }
 
     h1 {
@@ -22,7 +22,7 @@
 
     li {
       margin-bottom: 10px;
-      background-color: #fcf8e3;
+      background-color: #fcf8e3; /* Light yellow background */
       border-radius: 4px;
       padding: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -39,7 +39,7 @@
     }
 
     button {
-      background-color: #f7e8b0;
+      background-color: #f7e8b0; /* Light yellow button background */
       color: #333;
       border: none;
       padding: 8px 12px;
@@ -50,7 +50,7 @@
     }
 
     button:hover {
-      background-color: #f2d680;
+      background-color: #f2d680; /* Dark yellow button background */
     }
 
     .current-path {
@@ -58,22 +58,55 @@
       color: #666;
       margin-bottom: 10px;
     }
+
+    .upload-button {
+      position: fixed;
+      top: 6%;
+      left: 850px; /* Adjusted position */
+      transform: translate(-50%, -50%);
+    }
+
+    .upload-button button {
+      background-color: #f9c4d2; /* Light pink button background */
+      color: #333;
+      padding: 10px 15px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .upload-button button:hover {
+      background-color: #f79eb1; /* Dark pink button background */
+    }
+
+    .upload-button input[type="file"] {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div style="max-width: 600px; margin: 0 auto;">
     <h1>File Manager</h1>
-    <div class="current-path">Current Directory: /path/to/current/folder</div>
+    <div class="current-path">Current directory: /path/to/current/folder</div>
     <ul id="file-list"></ul>
   </div>
 
+  <div class="upload-button">
+    <input type="file" id="file-input" />
+    <button onclick="handleUploadButtonClick()">Upload</button>
+  </div>
+
   <script>
+    // File data
     var files = [
-      { name: 'Example1.txt', path: 'files/Example1.txt' },
-      { name: 'Example2.jpg', path: 'files/Example1.jpg' },
-      { name: 'Example3.pdf', path: 'files/Example1.pdf' }
+      { name: 'File1.txt', path: 'files/File1.txt' },
+      { name: 'File2.jpg', path: 'files/File2.jpg' },
+      { name: 'File3.pdf', path: 'files/File3.pdf' }
     ];
 
+    // Generate file list
     var fileList = document.getElementById('file-list');
 
     files.forEach(function(file) {
@@ -84,6 +117,12 @@
       listItem.appendChild(link);
       fileList.appendChild(listItem);
     });
+
+    // Handle upload button click event
+    function handleUploadButtonClick() {
+      var fileInput = document.getElementById('file-input');
+      fileInput.click();
+    }
   </script>
 </body>
 </html>
