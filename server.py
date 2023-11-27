@@ -26,6 +26,8 @@ class RequestHandler:
             # Receive data
             recv_data = bytes()
             try:
+                if timeout - time.time() + start_time <= 0:
+                    raise socket.timeout
                 con.settimeout(timeout - time.time() + start_time)
                 while True:
                     data = con.recv(1024)

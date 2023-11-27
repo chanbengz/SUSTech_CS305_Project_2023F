@@ -18,7 +18,7 @@ status_code = {
     505: 'HTTP Version Not Supported',
 }
 maxconnect = 100
-timeout = 120
+timeout = 2
 command = [
     'upload',
     'delete'

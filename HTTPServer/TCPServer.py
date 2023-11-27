@@ -36,6 +36,7 @@ class TCPServer:
     def shutdown(self):
         self.__shutdown_request = True
         self.__is_shut_down.wait()
+
     def handle_request(self):
         timeout = self.socket.gettimeout()
         if timeout is None:
@@ -75,9 +76,6 @@ class TCPServer:
     def finish_request(self, request, client_address):
         self.RequestHandlerClass(request, client_address, self)
 
-    def shutdown_request(self, request):
-        self.close_request(request)
-
     def handle_error(self, request, client_address):
         print('-'*40, file=sys.stderr)
         print('Exception occurred during processing of request from',
@@ -95,7 +93,10 @@ class TCPServer:
         return self.socket.accept()
 
     def shutdown_request(self, request):
-        request.shutdown(socket.SHUT_WR)
+        try:
+            request.shutdown(socket.SHUT_WR)
+        except OSError:
+            pass
         self.close_request(request)
 
     def close_request(self, request):
