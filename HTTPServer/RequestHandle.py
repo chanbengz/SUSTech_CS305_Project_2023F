@@ -1,5 +1,4 @@
 import datetime
-from HTTPServer.FileOperation import *
 
 home_page = open('public/index.html', 'rb').read()
 icon = open('public/favicon.ico', 'rb').read()
@@ -18,7 +17,8 @@ status_code = {
     505: 'HTTP Version Not Supported',
 }
 maxconnect = 100
-timeout = 2
+timeout = 120
+root_director = 'data/'
 command = [
     'upload',
     'delete'
@@ -37,38 +37,53 @@ def parse_header(headers, code):
             res_header += 'Connection: close\r\n'
     if 'Set-Cookie' in headers:
         res_header += 'Set-Cookie: ' + headers['Set-Cookie'] + '\r\n'
+    if 'WWW-Authenticate' in headers:
+        res_header += 'WWW-Authenticate: ' + headers['WWW-Authenticate'] + '\r\n'
     return res_header.encode('utf-8')
 
 def parse_request(request):
     request = request.split('\r\n')
     method, path, protocol = request[0].split(' ')
-    data = request[-1]
+    data = ''
     result = dict()
+    end_of_header = 0
     for i in range(1, len(request) - 1):
         if request[i] == '':
-            continue
+            end_of_header = i
+            break
         key, value = request[i].split(': ')
         result[key.title()] = value
+    for i in range(end_of_header + 1, len(request)):
+        data += request[i] + '\n'
     return method, path, protocol, result, data
 
 def process_get(path, headers):
-    if path == '/favicon.ico':
-        data = icon
-    else:
-        data = home_page
+    data = home_page
     return process_head(path, headers) + data
 
-
 def process_post(path, headers, msgdata):
-    pass
+    print(msgdata)
+    return process_head(path, headers)
 
 def process_head(path, headers):
-    res_header = parse_header(headers, 200)
-    if path == '/favicon.ico':
-        data = icon
-        res_header += b'Content-Type: image/x-icon\r\n'
-    else:
-        data = home_page
-        res_header += b'Content-Type: text/html\r\n'
-    res_header += b'Content-Length: ' + bytes(len(data)) + b'\r\n'
+    datalen = len(home_page)
+    res_header = parse_header(headers, 200) if 'WWW-Authenticate' not in headers else parse_header(headers, 401)
+    res_header += b'Content-Type: text/html\r\n'
+    res_header += b'Content-Length: ' + str(datalen).encode() + b'\r\n'
     return res_header + b'\r\n'
+
+def process_icon(headers):
+    res_header = parse_header(headers, 200)
+    res_header += b'Content-Type: image/x-icon\r\n'
+    res_header += b'Content-Length: ' + str(len(icon)).encode() + b'\r\n'
+    return res_header + b'\r\n' + icon
+
+def parse_path(path):
+    if '?' not in path:
+        return path, dict()
+    path, tmp = path.split('?')
+    parameters = dict()
+    for parameter in tmp.split('&'):
+        key, value = parameter.split('=')
+        parameters[key] = value
+    return path, parameters

@@ -1,1 +1,0 @@
-# Upload and Delete functions for the HTTPServer

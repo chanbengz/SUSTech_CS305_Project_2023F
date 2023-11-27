@@ -67,7 +67,7 @@
     .upload-button {
       position: absolute;
       top: 6%;
-      left: 850px; /* Adjusted position */
+      left: 68%; /* Adjusted position */
       transform: translate(-50%, -50%);
     }
 
@@ -105,12 +105,12 @@
     .file-button:hover {
       background-color: #a0d8a9; /* Dark green button background */
     }
-</style>
+  </style>
 </head>
 <body>
   <div style="max-width: 600px; margin: 0 auto;">
     <h1>File Manager</h1>
-    <div class="current-path">Current directory: /path/to/current/folder</div>
+    <div class="current-path">Current directory: {{path}}</div>
     <ul id="file-list"></ul>
   </div>
 
@@ -121,28 +121,13 @@
 
   <script>
     // File data
+    var root_path = '{{directory}}';
     var files = [
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' },
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' },
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' },
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' },
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' },
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' },
-      { name: 'File1.txt', path: 'files/File1.txt' },
-      { name: 'File2.jpg', path: 'files/File2.jpg' },
-      { name: 'File3.pdf', path: 'files/File3.pdf' }
+      { name: 'Home', path: root_path + 'data/', isDirectory: true },
+      { name: 'Previous', path: 'files/Directory2', isDirectory: true },
+      { name: 'File1.txt', path: 'files/File1.txt', isDirectory: false },
+      { name: 'File2.jpg', path: 'files/File2.jpg', isDirectory: false },
+      { name: 'File3.pdf', path: 'files/File3.pdf', isDirectory: false },
     ];
 
     // Generate file list
@@ -159,10 +144,20 @@
 
       var downloadButton = document.createElement('button');
       downloadButton.className = 'file-button';
-      downloadButton.textContent = 'Download';
+      if (file.isDirectory) {
+        downloadButton.textContent = 'Open';
+      } else {
+        downloadButton.textContent = 'Download';
+      }
       downloadButton.addEventListener('click', function() {
-        // TODO: Implement download functionality
-        alert('Download button clicked for file: ' + file.name);
+        if (file.isDirectory) {
+          window.location.href = file.path;
+        } else {
+          var link = document.createElement('a');
+          link.href = file.path;
+          link.download = file.name;
+          link.click();
+        }
       });
       buttonContainer.appendChild(downloadButton);
 
@@ -170,8 +165,17 @@
       deleteButton.className = 'file-button';
       deleteButton.textContent = 'Delete';
       deleteButton.addEventListener('click', function() {
-        // TODO: Implement delete functionality
-        alert('Delete button clicked for file: ' + file.name);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/delete?path=' + file.path, true);
+        xhr.setRequestHeader('Cookie', document.cookie)
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            alert('Deleted Successfully');
+          } else {
+            alert('Delete Failed');
+          }
+        };
+        xhr.send();
       });
       buttonContainer.appendChild(deleteButton);
 
@@ -184,6 +188,20 @@
     function handleUploadButtonClick() {
       var fileInput = document.getElementById('file-input');
       fileInput.click();
+      var file = fileInput.files[0];
+      var formData = new FormData();
+      formData.append('file', file);
+      var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload?path=' + file, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            alert('Uploaded Successfully');
+          } else {
+            alert('Upload Failed');
+          }
+        };
+        xhr.send(formData);
     }
   </script>
 </body>
