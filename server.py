@@ -65,14 +65,14 @@ class RequestHandler:
                 elif path.strip('/') == command[1]:
                     if method.upper() == 'POST':
                         raise
-                    con.sendall(process_delete(parameters['path'], headers, msgdata))
+                    con.sendall(process_delete(parameters['path'], headers))
                 else:
                     if method.upper() == 'POST':
                         raise
                     if parameters.get('SUSTech-HTTP') == '1':
                         pass
                     else:
-                        con.sendall(process_download(path, headers, msgdata))
+                        con.sendall(process_download(path.strip('/'), headers))
             except:
                 con.sendall(parse_header(headers, 405))
             

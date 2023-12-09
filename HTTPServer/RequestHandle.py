@@ -1,5 +1,6 @@
 import datetime, base64, uuid, time
 import sqlite3 as sql
+import os, pathlib
 
 home_page = open('public/index.html', 'rb').read()
 icon = open('public/favicon.ico', 'rb').read()
@@ -26,6 +27,8 @@ def parse_header(headers, code):
     res_header += http_version + ' ' + str(code) + ' ' + status_code[code] + '\r\n'
     res_header += 'Server: ' + 'Python HTTP Server' + '\r\n'
     res_header += 'Date: ' + datetime.datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT') + '\r\n'
+    if 'Content-Length' in headers:
+        res_header += 'Content-Length: ' + str(headers['Content-Length']) + '\r\n'
     if 'Connection' in headers:
         if headers['Connection'].lower() == 'keep-alive':
             res_header += 'Keep-Alive: timeout=' + str(timeout) + ', max=' + str(maxconnect) + '\r\n'
@@ -55,13 +58,54 @@ def parse_request(request):
     return method, path, protocol, result, data
 
 def process_delete(path, headers):
-    pass
+    current_user = path.split('/')[0]
+    headers['Content-Length'] = 0
+    if headers['User'] != current_user:
+        return parse_header(headers, 401) + b'\r\n'
+    path = 'data/' + path
+    if os.path.exists(path):
+        #os.remove(path) 
+        print('Delete file: ' + path)
+        response = parse_header(headers, 200) + b'\r\n'
+    else:
+        response = parse_header(headers, 404) + b'\r\n'
+    return response + b'\r\n'
 
 def process_upload(path, headers, msgdata):
-    pass
+    current_user = path.split('/')[0]
+    headers['Content-Length'] = 0
+    if headers['User'] != current_user:
+        return parse_header(headers, 401) + b'\r\n'
+    path = 'data/' + path
+    with open(path, 'wb') as file:
+        file.write(msgdata)
+    response = parse_header(headers, 200) + b'\r\n'
+    return response + b'\r\n'
 
 def process_download(path, headers):
-    pass
+    if path == '' and 'User' in headers:
+        return process_download(headers['User'] + '/', headers)
+    current_user = path.split('/')[0]
+    headers['Content-Length'] = 0
+    if headers['User'] != current_user:
+        return parse_header(headers, 401) + b'\r\n'
+    path = 'data/' + path
+    Path = pathlib.Path(path)
+    if Path.is_dir():
+        file_names = [entry.name + '/' if entry.is_dir() else entry.name for entry in Path.iterdir()]
+        msgdata = file_names.__str__().encode()
+        headers['Content-Length'] = len(msgdata)
+        response = parse_header(headers, 200) + b'\r\n' + msgdata + b'\r\n'
+        return response
+    else:
+        if os.path.exists(path):
+            with open(path, 'rb') as file:
+                file_content = file.read()
+            headers['Content-Length'] = file_content.__len__()
+            response = parse_header(headers, 200) + b'\r\n' + file_content
+        else:
+            response = parse_header(headers, 404) + b'\r\n'
+    return response
 
 def process_head(path, headers):
     datalen = 0
