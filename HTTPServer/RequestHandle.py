@@ -99,7 +99,7 @@ def process_upload(path, headers, msgdata):
 
 def process_download(con, path, headers, sustech, head):
     if path == '' and 'User' in headers:
-        return process_download(headers['User'] + '/', headers)
+        return process_download(con, headers['User'] + '/', headers, sustech, head)
     current_user = path.split('/')[0]
     headers['Content-Length'] = 0
     if headers['User'] != current_user:
