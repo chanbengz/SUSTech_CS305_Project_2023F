@@ -38,6 +38,8 @@ def parse_header(headers, code):
             res_header += 'Connection: close\r\n'
     if 'Set-Cookie' in headers:
         res_header += 'Set-Cookie: ' + headers['Set-Cookie'] + '\r\n'
+    if 'Chunked' in headers and headers['Chunked'] == '1':
+        res_header += 'Transfer-Encoding: chunked\r\n'    
     if 'WWW-Authenticate' in headers:
         res_header += 'WWW-Authenticate: ' + headers['WWW-Authenticate'] + '\r\n'
     return res_header.encode('utf-8')
@@ -95,37 +97,47 @@ def process_upload(path, headers, msgdata):
     response = parse_header(headers, 200) + b'\r\n'
     return response + b'\r\n'
 
-def process_download(path, headers):
+def process_download(con, path, headers, sustech, head):
     if path == '' and 'User' in headers:
         return process_download(headers['User'] + '/', headers)
     current_user = path.split('/')[0]
     headers['Content-Length'] = 0
     if headers['User'] != current_user:
-        return parse_header(headers, 401) + b'\r\n'
+        con.sendall(parse_header(headers, 401) + b'\r\n')
+        return
     path = 'data/' + path
     Path = pathlib.Path(path)
     if Path.is_dir():
-        file_names = [entry.name + '/' if entry.is_dir() else entry.name for entry in Path.iterdir()]
-        msgdata = file_names.__str__().encode()
+        if sustech:
+            file_names = [entry.name + '/' if entry.is_dir() else entry.name for entry in Path.iterdir()]
+            msgdata = file_names.__str__().encode()
+        else:
+            msgdata = home_page
         headers['Content-Length'] = len(msgdata)
         response = parse_header(headers, 200) + b'\r\n' + msgdata + b'\r\n'
-        return response
+        con.sendall(response)
+        return
     else:
         if os.path.exists(path):
-            with open(path, 'rb') as file:
-                file_content = file.read()
-            headers['Content-Length'] = file_content.__len__()
-            response = parse_header(headers, 200) + b'\r\n' + file_content
+            if headers.get('Chunked') == '1':
+                response = parse_header(headers, 200) + b'\r\n'
+                with open(path, 'rb') as file:
+                    while True:
+                        con.sendall(response)
+                        data = file.read(1024)
+                        if not data:
+                            break
+                        response = hex(len(data)).encode() + b'\r\n' + data + b'\r\n'
+                con.sendall(b'0\r\n\r\n')
+                return
+            else:
+                with open(path, 'rb') as file:
+                    file_content = file.read()
+                headers['Content-Length'] = file_content.__len__()
+                response = parse_header(headers, 200) + b'\r\n' + file_content if not head else b''
         else:
             response = parse_header(headers, 404) + b'\r\n'
-    return response
-
-def process_head(path, headers):
-    datalen = 0
-    res_header = parse_header(headers, 200) if 'WWW-Authenticate' not in headers else parse_header(headers, 401)
-    res_header += b'Content-Type: text/html\r\n'
-    res_header += b'Content-Length: ' + str(datalen).encode() + b'\r\n'
-    return res_header + b'\r\n'
+    con.sendall(response)
 
 def process_icon(headers):
     res_header = parse_header(headers, 200)

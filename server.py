@@ -69,12 +69,11 @@ class RequestHandler:
                 else:
                     if method.upper() == 'POST':
                         raise
-                    if parameters.get('SUSTech-HTTP') == '1':
-                        pass
-                    else:
-                        con.sendall(process_download(path.strip('/'), headers))
+                    sustech = 'SUSTech-HTTP' in parameters and parameters['SUSTech-HTTP'] == '1'
+                    head = method.upper() == 'HEAD'
+                    process_download(con, path.strip('/'), headers, sustech, head)
             except:
-                con.sendall(parse_header(headers, 405))
+                con.sendall(parse_header(headers, 405) + b'\r\n')
             
             if headers['Connection'].lower() == 'close':
                 con.close()
