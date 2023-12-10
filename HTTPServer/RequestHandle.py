@@ -1,6 +1,7 @@
 import datetime, base64, uuid, time
 import sqlite3 as sql
 import os, pathlib
+import shutil
 
 home_page = open('public/index.html', 'rb').read()
 icon = open('public/favicon.ico', 'rb').read()
@@ -64,9 +65,14 @@ def process_delete(path, headers):
         return parse_header(headers, 401) + b'\r\n'
     path = 'data/' + path
     if os.path.exists(path):
-        #os.remove(path) 
-        print('Delete file: ' + path)
-        response = parse_header(headers, 200) + b'\r\n'
+        if os.path.isfile(path):
+            os.remove(path) 
+            print('Delete file: ' + path)
+            response = parse_header(headers, 200) + b'\r\n'
+        elif os.path.isdir(path):
+            shutil.rmtree(path)  # 使用shutil.rmtree()删除目录及其内容
+            print('Delete directory: ' + path)
+            response = parse_header(headers, 200) + b'\r\n'
     else:
         response = parse_header(headers, 404) + b'\r\n'
     return response + b'\r\n'
@@ -74,11 +80,18 @@ def process_delete(path, headers):
 def process_upload(path, headers, msgdata):
     current_user = path.split('/')[0]
     headers['Content-Length'] = 0
+    boundary = '--' + headers['Content-Type'].split('=')[1]
     if headers['User'] != current_user:
         return parse_header(headers, 401) + b'\r\n'
     path = 'data/' + path
-    with open(path, 'wb') as file:
-        file.write(msgdata)
+    files = msgdata.split(boundary)[1:-1]
+    for file_data in files:
+        file_data = file_data.strip('\r\n')
+        name, content = parse_formdata(file_data)
+        file_path = os.path.join(path, name)
+        with open(file_path, 'wb') as file:
+            file.write(content.encode())
+        print('Created file:', file_path)
     response = parse_header(headers, 200) + b'\r\n'
     return response + b'\r\n'
 
@@ -167,3 +180,14 @@ def authenticate(headers):
         cookie_database.close()
     
     return headers
+
+def parse_formdata(data):
+    tmp = data.split('\n')
+    name = ''
+    content = ''
+    for i in tmp[0].split('; '):
+        if i.startswith('filename'):
+            name = i.split('=')[1].strip('"')
+    for i in range(2, len(tmp)):
+        content += tmp[i] + '\n'
+    return name, content
