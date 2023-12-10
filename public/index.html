@@ -110,7 +110,7 @@
 <body>
   <div style="max-width: 600px; margin: 0 auto;">
     <h1>File Manager</h1>
-    <div class="current-path">Current directory: {{path}}</div>
+    <div class="current-path">Current directory: <b>{{path}}</b></div>
     <ul id="file-list"></ul>
   </div>
 
@@ -121,13 +121,10 @@
 
   <script>
     // File data
-    var root_path = '{{directory}}';
     var files = [
-      { name: 'Home', path: root_path + 'data/', isDirectory: true },
-      { name: 'Previous', path: 'files/Directory2', isDirectory: true },
-      { name: 'File1.txt', path: 'files/File1.txt', isDirectory: false },
-      { name: 'File2.jpg', path: 'files/File2.jpg', isDirectory: false },
-      { name: 'File3.pdf', path: 'files/File3.pdf', isDirectory: false },
+      { name: 'Home', path: '{{root}}', isDirectory: true },
+      { name: 'Previous', path: '{{previous}}', isDirectory: true },
+      {{items}}
     ];
 
     // Generate file list
@@ -153,10 +150,19 @@
         if (file.isDirectory) {
           window.location.href = file.path;
         } else {
-          var link = document.createElement('a');
-          link.href = file.path;
-          link.download = file.name;
-          link.click();
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://' + window.location.host + '/' + file.path, true);
+          xhr.setRequestHeader('Cookie', document.cookie);
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+              var blob = new Blob([xhr.response]);
+              var link = document.createElement('a');
+              link.href = window.URL.createObjectURL(blob);
+              link.download = file.name;
+              link.click();
+            }
+          };
+          xhr.send();
         }
       });
       buttonContainer.appendChild(downloadButton);
@@ -166,13 +172,12 @@
       deleteButton.textContent = 'Delete';
       deleteButton.addEventListener('click', function() {
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/delete?path=' + file.path, true);
+        xhr.open('GET', '/delete?path=' + file.path, true);
         xhr.setRequestHeader('Cookie', document.cookie)
         xhr.onreadystatechange = function() {
           if (xhr.readyState === 4 && xhr.status === 200) {
             alert('Deleted Successfully');
-          } else {
-            alert('Delete Failed');
+            listItem.remove();
           }
         };
         xhr.send();
@@ -188,21 +193,23 @@
     function handleUploadButtonClick() {
       var fileInput = document.getElementById('file-input');
       fileInput.click();
-      var file = fileInput.files[0];
       var formData = new FormData();
-      formData.append('file', file);
-      var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload?path=' + file, true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onreadystatechange = function() {
-          if (xhr.readyState === 4 && xhr.status === 200) {
-            alert('Uploaded Successfully');
-          } else {
-            alert('Upload Failed');
-          }
-        };
-        xhr.send(formData);
+      for(const file of fileInput.files) {
+        formData.append(file.name, file);
+      }
+
+      fetch('/upload?path=' + window.location.pathname, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include' // Include cookies in the request
+      })
+        .catch(function(error) {
+          console.error('Error:', error);
+        });
     }
+    </script>
+    </body>
+    </html>
   </script>
 </body>
 </html>

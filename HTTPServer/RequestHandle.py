@@ -1,7 +1,6 @@
 import datetime, base64, uuid, time
 import sqlite3 as sql
-import os, pathlib
-import shutil
+import os, pathlib, shutil, mimetypes
 
 home_page = open('public/index.html', 'rb').read()
 icon = open('public/favicon.ico', 'rb').read()
@@ -42,6 +41,8 @@ def parse_header(headers, code):
         res_header += 'Transfer-Encoding: chunked\r\n'    
     if 'WWW-Authenticate' in headers:
         res_header += 'WWW-Authenticate: ' + headers['WWW-Authenticate'] + '\r\n'
+    if 'Content-Type' in headers:
+        res_header += 'Content-Type: ' + headers['Content-Type'] + '\r\n'
     return res_header.encode('utf-8')
 
 def parse_request(request):
@@ -72,7 +73,7 @@ def process_delete(path, headers):
             print('Delete file: ' + path)
             response = parse_header(headers, 200) + b'\r\n'
         elif os.path.isdir(path):
-            shutil.rmtree(path)  # 使用shutil.rmtree()删除目录及其内容
+            shutil.rmtree(path)
             print('Delete directory: ' + path)
             response = parse_header(headers, 200) + b'\r\n'
     else:
@@ -80,11 +81,12 @@ def process_delete(path, headers):
     return response + b'\r\n'
 
 def process_upload(path, headers, msgdata):
+    path = path.strip('/')
     current_user = path.split('/')[0]
-    headers['Content-Length'] = 0
-    boundary = '--' + headers['Content-Type'].split('=')[1]
     if headers['User'] != current_user:
         return parse_header(headers, 401) + b'\r\n'
+    headers['Content-Length'] = 0
+    boundary = '--' + headers['Content-Type'].split('=')[1]
     path = 'data/' + path
     files = msgdata.split(boundary)[1:-1]
     for file_data in files:
@@ -98,21 +100,24 @@ def process_upload(path, headers, msgdata):
     return response + b'\r\n'
 
 def process_download(con, path, headers, sustech, head):
-    if path == '' and 'User' in headers:
-        return process_download(con, headers['User'] + '/', headers, sustech, head)
     current_user = path.split('/')[0]
-    headers['Content-Length'] = 0
     if headers['User'] != current_user:
         con.sendall(parse_header(headers, 401) + b'\r\n')
         return
+    
+    if path == '' and 'User' in headers:
+        return process_download(con, headers['User'] + '/', headers, sustech, head)
+    headers['Content-Length'] = 0
     path = 'data/' + path
     Path = pathlib.Path(path)
     if Path.is_dir():
         if sustech:
             file_names = [entry.name + '/' if entry.is_dir() else entry.name for entry in Path.iterdir()]
             msgdata = file_names.__str__().encode()
+            headers['Content-Type'] = 'text/plain'
         else:
-            msgdata = home_page
+            msgdata = render_homepage(path)
+            headers['Content-Type'] = 'text/html'
         headers['Content-Length'] = len(msgdata)
         response = parse_header(headers, 200) + b'\r\n' + msgdata + b'\r\n'
         con.sendall(response)
@@ -122,6 +127,7 @@ def process_download(con, path, headers, sustech, head):
             if headers.get('Chunked') == '1':
                 response = parse_header(headers, 200) + b'\r\n'
                 with open(path, 'rb') as file:
+                    headers['Content-Type'] = mimetypes.guess_type(path)[0]
                     while True:
                         con.sendall(response)
                         data = file.read(1024)
@@ -133,6 +139,7 @@ def process_download(con, path, headers, sustech, head):
             else:
                 with open(path, 'rb') as file:
                     file_content = file.read()
+                    headers['Content-Type'] = mimetypes.guess_type(path)[0]
                 headers['Content-Length'] = file_content.__len__()
                 response = parse_header(headers, 200) + b'\r\n' + file_content if not head else b''
         else:
@@ -183,7 +190,18 @@ def authenticate(headers):
                 duration = int(time.time()) - result[2]
             if duration >= 3600:
                 cookie_database.execute(f"delete from cookies where session_id = '{session_id}';")
-                raise
+                username, passwd = base64.b64decode(headers['Authorization'].strip('Basic ')).decode().split(':')
+                user_passwd = ''
+                for result in user_database.execute(f"select passwd from users where name = '{username}';"):
+                    user_passwd = result[0]
+                if user_passwd == passwd:
+                    session_id = str(uuid.uuid4())
+                    cookie_database.execute(f"insert into cookies values ('{username}', '{session_id}', {int(time.time())});")
+                    cookie_database.commit()
+                    headers['Set-Cookie'] = 'session-id=' + session_id
+                    headers['User'] = username
+                else:
+                    raise
     except:
         headers['User'] = None
         headers['WWW-Authenticate'] = 'Basic realm="Authorization Required"'
@@ -198,8 +216,25 @@ def parse_formdata(data):
     name = ''
     content = ''
     for i in tmp[0].split('; '):
-        if i.startswith('filename'):
+        if i.startswith('name'):
             name = i.split('=')[1].strip('"')
     for i in range(2, len(tmp)):
         content += tmp[i] + '\n'
     return name, content
+
+def render_homepage(path):
+    current = pathlib.Path(path)
+    page = home_page.decode()
+    page = page.replace('{{path}}', path.strip('data/'))
+    page = page.replace('{{root}}', '/' + path.split('/')[1])
+    page = page.replace('{{previous}}', current.parent.__str__().strip('data'))
+    item_str = ''
+    for entry in current.iterdir():
+        name = entry.name
+        if name.startswith('.'):
+            continue
+        path = entry.__str__()[5:]
+        isdir = entry.is_dir().__str__().lower()
+        item_str += "{ " + f"name: '{name}', path: '{path}', isDirectory: {isdir}" + " },\n"
+    page = page.replace('{{items}}', item_str)
+    return page.encode()
