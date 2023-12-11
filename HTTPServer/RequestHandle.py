@@ -100,13 +100,6 @@ def process_upload(path, headers, msgdata):
     return response + b'\r\n'
 
 def process_download(con, path, headers, sustech, head):
-    current_user = path.split('/')[0]
-    if headers['User'] != current_user:
-        con.sendall(parse_header(headers, 401) + b'\r\n')
-        return
-    
-    if path == '' and 'User' in headers:
-        return process_download(con, headers['User'] + '/', headers, sustech, head)
     headers['Content-Length'] = 0
     path = 'data/' + path
     Path = pathlib.Path(path)
