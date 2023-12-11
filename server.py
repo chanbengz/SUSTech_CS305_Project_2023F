@@ -21,6 +21,7 @@ class RequestHandler:
     def handle(self):
         con = self.request
         start_time = time.time()
+        print(con.getpeername())
         while True:
             # Receive data
             recv_data = bytes()
