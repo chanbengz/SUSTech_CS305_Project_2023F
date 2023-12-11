@@ -294,10 +294,9 @@ def read_partial_file(file_path, start, end):
 def generate_multipart_response(file_path, ranges, boundary):
     response_parts = []
     for start, end in ranges:
-        print("!!!!!!")
         content_range = 'bytes {start}-{end}/{total}'.format(start=start, end=end, total=os.path.getsize(file_path))
-        print("partial_content = " + partial_content)
         partial_content = read_partial_file(file_path, start, end)
+        print("partial_content = " + partial_content.decode())
         print("partial_range = " + content_range)
         mime_type, _ = mimetypes.guess_type(file_path)
         part = []

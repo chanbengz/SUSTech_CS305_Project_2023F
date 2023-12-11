@@ -58,23 +58,24 @@ class RequestHandler:
 
             # Process request
             path, parameters = parse_path(path)
-            try:
-                if path.strip('/') == command[0]:
-                    if method.upper() == 'GET':
-                        raise
-                    con.sendall(process_upload(parameters['path'], headers, msgdata))
-                elif path.strip('/') == command[1]:
-                    if method.upper() == 'POST':
-                        raise
-                    con.sendall(process_delete(parameters['path'], headers))
-                else:
-                    if method.upper() == 'POST':
-                        raise
-                    sustech = 'SUSTech-HTTP' in parameters and parameters['SUSTech-HTTP'] == '1'
-                    head = method.upper() == 'HEAD'
-                    process_download(con, path.strip('/'), headers, sustech, head)
-            except:
-                con.sendall(parse_header(headers, 405) + b'\r\n')
+
+            if path.strip('/') == command[0]:
+                if method.upper() == 'GET':
+                    con.sendall(parse_header(headers, 405) + b'\r\n')
+                    continue
+                con.sendall(process_upload(parameters['path'], headers, msgdata))
+            elif path.strip('/') == command[1]:
+                if method.upper() == 'POST':
+                    con.sendall(parse_header(headers, 405) + b'\r\n')
+                    continue
+                con.sendall(process_delete(parameters['path'], headers))
+            else:
+                if method.upper() == 'POST':
+                    con.sendall(parse_header(headers, 405) + b'\r\n')
+                    continue
+                sustech = 'SUSTech-HTTP' in parameters and parameters['SUSTech-HTTP'] == '1'
+                head = method.upper() == 'HEAD'
+                process_download(con, path.strip('/'), headers, sustech, head)
             
             if headers['Connection'].lower() == 'close':
                 con.close()
