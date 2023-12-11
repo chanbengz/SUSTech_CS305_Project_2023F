@@ -277,7 +277,7 @@ def parse_range(range_header, entity_length):
                 # 起始和结束范围，如 "bytes=500-999"
                 start = int(start)
                 end = int(end)
-            if start <= end and end < entity_length:
+            if start <= end and end < entity_length and start >= 0:
                 result.append((start, end))
             else:
                 return None
@@ -296,15 +296,13 @@ def generate_multipart_response(file_path, ranges, boundary):
     for start, end in ranges:
         content_range = 'bytes {start}-{end}/{total}'.format(start=start, end=end, total=os.path.getsize(file_path))
         partial_content = read_partial_file(file_path, start, end)
-        print("partial_content = " + partial_content.decode())
-        print("partial_range = " + content_range)
         mime_type, _ = mimetypes.guess_type(file_path)
         part = []
         part.append('--' + boundary)
         part.append('Content-Type: ' + mime_type)
         part.append('Content-Range: ' + content_range)
         part.append('')
-        part.append(partial_content)
+        part.append(partial_content.decode())
         print(part)
         response_parts.append('\r\n'.join(part))
 
