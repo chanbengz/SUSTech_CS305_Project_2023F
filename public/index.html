@@ -157,11 +157,10 @@
           var newPathParts = [];
           if (pathParts[pathParts.length - 1] === 'Home') {
             newPathParts.push(''); 
-            newPathParts.push(pathParts[1]);
           } else {
             for (var i = 0; i < pathParts.length; i++) {
               if (pathParts[i] === 'Previous') {
-                if (newPathParts.length > 2) {
+                if (newPathParts.length > 1) {
                   newPathParts.pop();
                 }
               } else {
