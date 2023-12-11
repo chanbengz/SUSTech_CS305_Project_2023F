@@ -123,7 +123,7 @@
     // File data
     var files = [
       { name: 'Home', path: '{{root}}', isDirectory: true },
-      { name: 'Previous', path: '{{previous}}', isDirectory: true },
+      { name: 'Previous', path: '..', isDirectory: true },
       {{items}}
     ];
 
@@ -148,7 +148,29 @@
       }
       downloadButton.addEventListener('click', function() {
         if (file.isDirectory) {
-          window.location.href = file.path;
+          var currentPath = window.location.pathname;
+          var newPath = currentPath + (currentPath.endsWith('/') ? '' : '/') + file.name;
+          
+          // 处理路径中的 ".."
+          var url = new URL(newPath, window.location.href);
+          var pathParts = url.pathname.split('/');
+          var newPathParts = [];
+          if (pathParts[pathParts.length - 1] === 'Home') {
+            newPathParts.push(''); 
+            newPathParts.push(pathParts[1]);
+          } else {
+            for (var i = 0; i < pathParts.length; i++) {
+              if (pathParts[i] === 'Previous') {
+                if (newPathParts.length > 2) {
+                  newPathParts.pop();
+                }
+              } else {
+                newPathParts.push(pathParts[i]); 
+              }
+            }
+          }
+          url.pathname = newPathParts.join('/');
+          window.location.href = url.href;
         } else {
           var xhr = new XMLHttpRequest();
           xhr.open('GET', 'http://' + window.location.host + '/' + file.path, true);
@@ -191,22 +213,34 @@
 
     // Handle upload button click event
     function handleUploadButtonClick() {
-      var fileInput = document.getElementById('file-input');
-      fileInput.click();
-      var formData = new FormData();
-      for(const file of fileInput.files) {
-        formData.append(file.name, file);
-      }
+          var fileInput = document.getElementById('file-input');
+          fileInput.click();
+          fileInput.addEventListener('change', function() {
+            var formData = new FormData();
+            for(const file of fileInput.files) {
+              formData.append(file.name, file); // 将文件添加到FormData对象中，键名为'file'
+            }
 
-      fetch('/upload?path=' + window.location.pathname, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include' // Include cookies in the request
-      })
-        .catch(function(error) {
-          console.error('Error:', error);
-        });
-    }
+            fetch('/upload?path=' + window.location.pathname, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include' // Include cookies in the request
+            })
+              .then(function(response) {
+                if (response.ok) {
+                  return response.text(); // 返回响应文本
+                } else {
+                  throw new Error('File upload failed'); // 抛出错误
+                }
+              })
+              .then(function(responseText) {
+                location.reload(); // 文件上传成功后刷新当前页面
+              })
+              .catch(function(error) {
+                console.error('Error:', error);
+              });
+          });
+        }
     </script>
     </body>
     </html>

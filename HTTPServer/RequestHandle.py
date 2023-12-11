@@ -227,7 +227,6 @@ def render_homepage(path):
     page = home_page.decode()
     page = page.replace('{{path}}', path.strip('data/'))
     page = page.replace('{{root}}', '/' + path.split('/')[1])
-    page = page.replace('{{previous}}', current.parent.__str__().strip('data'))
     item_str = ''
     for entry in current.iterdir():
         name = entry.name
