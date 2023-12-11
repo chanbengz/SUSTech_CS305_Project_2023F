@@ -74,6 +74,8 @@ class RequestHandler:
                     con.sendall(parse_header(headers, 405) + b'\r\n')
                     continue
                 sustech = 'SUSTech-HTTP' in parameters and parameters['SUSTech-HTTP'] == '1'
+                if 'chunked' in parameters:
+                    headers['Chunked'] = parameters['chunked']
                 head = method.upper() == 'HEAD'
                 process_download(con, path.strip('/'), headers, sustech, head)
             
