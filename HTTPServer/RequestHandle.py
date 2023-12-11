@@ -43,6 +43,8 @@ def parse_header(headers, code):
         res_header += 'WWW-Authenticate: ' + headers['WWW-Authenticate'] + '\r\n'
     if 'Content-Type' in headers:
         res_header += 'Content-Type: ' + headers['Content-Type'] + '\r\n'
+    if 'Content-Range' in headers:
+        res_header += 'Content-Range: ' + headers['Content-Range'] + '\r\n'
     return res_header.encode('utf-8')
 
 def parse_request(request):
@@ -129,6 +131,26 @@ def process_download(con, path, headers, sustech, head):
                         response = hex(len(data)).encode() + b'\r\n' + data + b'\r\n'
                 con.sendall(b'0\r\n\r\n')
                 return
+            elif 'Range' in headers:
+                range = parse_range(headers['Range'], os.path.getsize(path))
+                if range is None:
+                    response = parse_header(headers, 416) + b'\r\n'
+                    con.sendall(response)
+                    return
+                if len(range) > 1:
+                    boundary = str(uuid.uuid4())
+                    headers['Content-Type'] = 'multipart/byteranges; boundary=' + boundary
+                    response_body = generate_multipart_response(file_path, ranges, boundary)
+                    response = parse_header(headers, 206) + b'\r\n' + response_body + b'\r\n'
+                else:
+                    start, end = range[0]
+                    print(start, end)
+                    headers['Content-Type'] = mimetypes.guess_type(path)[0]
+                    headers['Content-Range'] = 'bytes {start}-{end}/{total}'.format(start=start, end=end, total=os.path.getsize(path))
+                    response_body = read_partial_file(path, start, end)
+                    print(response_body)
+                    headers['Content-Length'] = len(response_body)
+                    response = parse_header(headers, 206) + b'\r\n' + response_body + b'\r\n'
             else:
                 with open(path, 'rb') as file:
                     file_content = file.read()
@@ -230,3 +252,60 @@ def render_homepage(path):
         item_str += "{ " + f"name: '{name}', path: '{path}', isDirectory: {isdir}" + " },\n"
     page = page.replace('{{items}}', item_str)
     return page.encode()
+
+def parse_range(range_header, entity_length):
+    if not range_header.startswith('bytes='):
+        return None
+    
+    range_header = range_header[6:]
+    ranges = range_header.split(',')
+    result = []
+    for r in ranges:
+        if '-' in r:
+            start, end = r.split('-')
+            if start == '':
+                # 结尾范围，如 "bytes=-500"
+                start = entity_length - int(end)
+                end = entity_length - 1
+            elif end == '':
+                # 起始范围，如 "bytes=9500-"
+                start = int(start)
+                end = entity_length - 1
+            else:
+                # 起始和结束范围，如 "bytes=500-999"
+                start = int(start)
+                end = int(end)
+            if start <= end and end < entity_length:
+                result.append((start, end))
+            else:
+                return None
+
+    return result
+
+def read_partial_file(file_path, start, end):
+    print(file_path, start, end)
+    with open(file_path, 'rb') as file:
+        file.seek(start)
+        content = file.read(end - start + 1)
+    return content
+        
+
+def generate_multipart_response(file_path, ranges, boundary):
+    response_parts = []
+    for start, end in ranges:
+        content_range = 'bytes {start}-{end}/{total}'.format(start=start, end=end, total=os.path.getsize(file_path))
+        partial_content = read_partial_file(file_path, start, end)
+        mime_type, _ = mimetypes.guess_type(file_path)
+        part = []
+        part.append('--' + boundary)
+        part.append('Content-Type: ' + mime_type)
+        part.append('Content-Range: ' + content_range)
+        part.append('')
+        part.append(partial_content)
+        response_parts.append('\r\n'.join(part))
+
+    response = []
+    response.append('\r\n'.join(response_parts))
+    response.append('--' + boundary + '--')
+
+    return '\r\n'.join(response).encode()
