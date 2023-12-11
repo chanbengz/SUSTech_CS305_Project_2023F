@@ -132,18 +132,20 @@ def process_download(con, path, headers, sustech, head):
                 con.sendall(b'0\r\n\r\n')
                 return
             elif 'Range' in headers:
-                range = parse_range(headers['Range'], os.path.getsize(path))
-                if range is None:
+                info = parse_range(headers['Range'], os.path.getsize(path))
+                if info is None:
                     response = parse_header(headers, 416) + b'\r\n'
                     con.sendall(response)
                     return
-                if len(range) > 1:
+                if len(info) > 1:
                     boundary = str(uuid.uuid4())
                     headers['Content-Type'] = 'multipart/byteranges; boundary=' + boundary
-                    response_body = generate_multipart_response(file_path, ranges, boundary)
+                    response_body = generate_multipart_response(path, info, boundary)
+                    print(response_body)
+                    headers['Content-Length'] = len(response_body)
                     response = parse_header(headers, 206) + b'\r\n' + response_body + b'\r\n'
                 else:
-                    start, end = range[0]
+                    start, end = info[0] 
                     print(start, end)
                     headers['Content-Type'] = mimetypes.guess_type(path)[0]
                     headers['Content-Range'] = 'bytes {start}-{end}/{total}'.format(start=start, end=end, total=os.path.getsize(path))
@@ -283,7 +285,6 @@ def parse_range(range_header, entity_length):
     return result
 
 def read_partial_file(file_path, start, end):
-    print(file_path, start, end)
     with open(file_path, 'rb') as file:
         file.seek(start)
         content = file.read(end - start + 1)
@@ -293,8 +294,11 @@ def read_partial_file(file_path, start, end):
 def generate_multipart_response(file_path, ranges, boundary):
     response_parts = []
     for start, end in ranges:
+        print("!!!!!!")
         content_range = 'bytes {start}-{end}/{total}'.format(start=start, end=end, total=os.path.getsize(file_path))
+        print("partial_content = " + partial_content)
         partial_content = read_partial_file(file_path, start, end)
+        print("partial_range = " + content_range)
         mime_type, _ = mimetypes.guess_type(file_path)
         part = []
         part.append('--' + boundary)
@@ -302,6 +306,7 @@ def generate_multipart_response(file_path, ranges, boundary):
         part.append('Content-Range: ' + content_range)
         part.append('')
         part.append(partial_content)
+        print(part)
         response_parts.append('\r\n'.join(part))
 
     response = []
