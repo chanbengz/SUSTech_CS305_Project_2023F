@@ -14,9 +14,9 @@ This is a HTTP File Manager, which is a web application that allows users to man
 
 ## Feature
   - [x] Authentication and cookie
-  - [ ] File preview and download
-  - [ ] File upload
-  - [ ] File delete
+  - [x] File preview and download
+  - [x] File upload
+  - [x] File delete
   - [x] User-friendly interface
   - [ ] RSA encryption
 
