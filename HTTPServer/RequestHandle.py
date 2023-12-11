@@ -134,7 +134,7 @@ def process_download(con, path, headers, sustech, head):
                     file_content = file.read()
                     headers['Content-Type'] = mimetypes.guess_type(path)[0]
                 headers['Content-Length'] = file_content.__len__()
-                response = parse_header(headers, 200) + b'\r\n' + file_content if not head else b''
+                response = parse_header(headers, 200) + b'\r\n' + file_content if not head else b'' + b'\r\n'
         else:
             response = parse_header(headers, 404) + b'\r\n'
     con.sendall(response)
