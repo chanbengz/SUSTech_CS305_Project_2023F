@@ -20,6 +20,7 @@ status_code = {
 }
 maxconnect = 100
 timeout = 120
+cookie_ttl = 3600
 command = ['upload', 'delete']
 
 def parse_header(headers, code) -> bytes:
@@ -200,12 +201,12 @@ def authenticate(headers):
             else:
                 raise
         else:
-            duration = 3600
+            duration = cookie_ttl
             session_id = headers['Cookie'].split('=')[1]
             for result in cookie_database.execute(f"select * from cookies where session_id = '{session_id}';"):
                 headers['User'] = result[0]
                 duration = int(time.time()) - result[2]
-            if duration >= 3600:
+            if duration >= cookie_ttl:
                 cookie_database.execute(f"delete from cookies where session_id = '{session_id}';")
                 username, passwd = base64.b64decode(headers['Authorization'].strip('Basic ')).decode().split(':')
                 user_passwd = ''
