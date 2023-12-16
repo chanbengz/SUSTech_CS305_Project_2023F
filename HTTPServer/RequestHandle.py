@@ -22,7 +22,7 @@ maxconnect = 100
 timeout = 120
 command = ['upload', 'delete']
 
-def parse_header(headers, code):
+def parse_header(headers, code) -> bytes:
     res_header = ''
     res_header += http_version + ' ' + str(code) + ' ' + status_code[code] + '\r\n'
     res_header += 'Server: ' + 'Python HTTP Server' + '\r\n'
@@ -47,23 +47,23 @@ def parse_header(headers, code):
         res_header += 'Content-Range: ' + headers['Content-Range'] + '\r\n'
     return res_header.encode('utf-8')
 
-def parse_request(request):
-    request = request.split('\r\n')
-    method, path, protocol = request[0].split(' ')
-    data = ''
+def parse_request(request:bytes) -> (str, str, str, dict, bytes):
+    request = request.split(b'\r\n')
+    method, path, protocol = request[0].split(b' ')
+    data = b''
     result = dict()
     end_of_header = 0
     for i in range(1, len(request)):
-        if request[i] == '':
+        if request[i] == b'':
             end_of_header = i
             break
-        key, value = request[i].split(': ')
-        result[key.title()] = value
+        key, value = request[i].split(b': ')
+        result[key.decode().title()] = value.decode()
     for i in range(end_of_header + 1, len(request)):
-        data += request[i] + '\n'
-    return method, path, protocol, result, data
+        data += request[i] + b'\n'
+    return method.decode(), path.decode(), protocol.decode(), result, data
 
-def process_delete(path, headers):
+def process_delete(path, headers) -> bytes:
     current_user = path.split('/')[0]
     headers['Content-Length'] = 0
     if headers['User'] != current_user:
@@ -82,7 +82,7 @@ def process_delete(path, headers):
         response = parse_header(headers, 404) + b'\r\n'
     return response + b'\r\n'
 
-def process_upload(path, headers, msgdata):
+def process_upload(path, headers, msgdata) -> bytes:
     path = path.strip('/')
     current_user = path.split('/')[0]
     if headers['User'] != current_user:
@@ -90,18 +90,18 @@ def process_upload(path, headers, msgdata):
     headers['Content-Length'] = 0
     boundary = '--' + headers['Content-Type'].split('=')[1]
     path = 'data/' + path
-    files = msgdata.split(boundary)[1:-1]
+    files = msgdata.split(boundary.encode())[1:-1]
     for file_data in files:
-        file_data = file_data.strip('\r\n')
+        file_data = file_data.strip(b'\r\n')
         name, content = parse_formdata(file_data)
         file_path = os.path.join(path, name)
         with open(file_path, 'wb') as file:
-            file.write(content.encode())
+            file.write(content)
         print('Created file:', file_path)
     response = parse_header(headers, 200) + b'\r\n'
     return response + b'\r\n'
 
-def process_download(con, path, headers, sustech, head):
+def process_download(con, path:str, headers:dict, sustech:bool, head:bool) -> None:
     headers['Content-Length'] = 0
     path = 'data/' + path
     Path = pathlib.Path(path)
@@ -163,13 +163,13 @@ def process_download(con, path, headers, sustech, head):
             response = parse_header(headers, 404) + b'\r\n'
     con.sendall(response)
 
-def process_icon(headers):
+def process_icon(headers) -> bytes:
     res_header = parse_header(headers, 200)
     res_header += b'Content-Type: image/x-icon\r\n'
     res_header += b'Content-Length: ' + str(len(icon)).encode() + b'\r\n'
     return res_header + b'\r\n' + icon
 
-def parse_path(path):
+def parse_path(path:str) -> (str, dict):
     if '?' not in path:
         return path, dict()
     path, tmp = path.split('?')
@@ -228,18 +228,18 @@ def authenticate(headers):
     
     return headers
 
-def parse_formdata(data):
-    tmp = data.split('\n')
-    name = ''
-    content = ''
-    for i in tmp[0].split('; '):
-        if i.startswith('name'):
-            name = i.split('=')[1].strip('"')
+def parse_formdata(data:bytes) -> (str, bytes):
+    tmp = data.split(b'\n')
+    name = b''
+    content = b''
+    for i in tmp[0].split(b'; '):
+        if i.startswith(b'name'):
+            name = i.split(b'=')[1].strip(b'"')
     for i in range(2, len(tmp)):
-        content += tmp[i] + '\n'
-    return name, content
+        content += tmp[i] + b'\n'
+    return name.decode(), content
 
-def render_homepage(path):
+def render_homepage(path:str) -> bytes:
     current = pathlib.Path(path)
     page = home_page.decode()
     page = page.replace('{{path}}', path.strip('data/'))
