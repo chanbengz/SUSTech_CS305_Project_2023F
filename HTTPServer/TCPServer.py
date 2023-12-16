@@ -138,8 +138,7 @@ class ThreadingMixIn:
             self.shutdown_request(request)
 
     def process_request(self, request, client_address):
-        t = threading.Thread(target = self.process_request_thread,
-                             args = (request, client_address))
+        t = threading.Thread(target=self.process_request_thread, args=(request, client_address))
         t.daemon = False
         self._threads.append(t)
         t.start()

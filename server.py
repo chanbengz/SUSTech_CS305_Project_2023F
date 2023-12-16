@@ -41,7 +41,7 @@ class RequestHandler:
                 con.close()
                 return # Timeout
 
-            # print(recv_data.decode())
+            print(recv_data.decode())
             method, path, protocol, headers, msgdata = parse_request(recv_data.strip(b'\r\n'))
             
             if protocol.upper() != http_version:
