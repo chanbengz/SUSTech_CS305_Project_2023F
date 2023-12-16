@@ -1,6 +1,6 @@
-import datetime, base64, uuid, time
+import datetime, base64, uuid, time, os, pathlib, shutil, mimetypes
 import sqlite3 as sql
-import os, pathlib, shutil, mimetypes
+from Crypto.Util.Padding import unpad, pad
 
 home_page = open('public/index.html', 'rb').read()
 icon = open('public/favicon.ico', 'rb').read()
@@ -22,6 +22,7 @@ maxconnect = 100
 timeout = 120
 cookie_ttl = 3600
 command = ['upload', 'delete']
+encrypt = False
 
 def parse_header(headers, code) -> bytes:
     res_header = ''
@@ -102,7 +103,7 @@ def process_upload(path, headers, msgdata) -> bytes:
     response = parse_header(headers, 200) + b'\r\n'
     return response + b'\r\n'
 
-def process_download(con, path:str, headers:dict, sustech:bool, head:bool) -> None:
+def process_download(con, path:str, headers:dict, sustech:bool, head:bool, cipher) -> None:
     headers['Content-Length'] = 0
     path = 'data/' + path
     Path = pathlib.Path(path)
@@ -116,7 +117,7 @@ def process_download(con, path:str, headers:dict, sustech:bool, head:bool) -> No
             headers['Content-Type'] = 'text/html'
         headers['Content-Length'] = len(msgdata)
         response = parse_header(headers, 200) + b'\r\n' + msgdata + b'\r\n'
-        con.sendall(response)
+        send(con, response, cipher)
         return
     else:
         if os.path.exists(path):
@@ -125,18 +126,18 @@ def process_download(con, path:str, headers:dict, sustech:bool, head:bool) -> No
                 with open(path, 'rb') as file:
                     headers['Content-Type'] = mimetypes.guess_type(path)[0]
                     while True:
-                        con.sendall(response)
+                        send(con, response, cipher)
                         data = file.read(1024)
                         if not data:
                             break
                         response = hex(len(data)).encode() + b'\r\n' + data + b'\r\n'
-                con.sendall(b'0\r\n\r\n')
+                send(con, b'0\r\n\r\n', cipher)
                 return
             elif 'Range' in headers:
                 info = parse_range(headers['Range'], os.path.getsize(path))
                 if info is None:
                     response = parse_header(headers, 416) + b'\r\n'
-                    con.sendall(response)
+                    send(con, response, cipher)
                     return
                 if len(info) > 1:
                     boundary = uuid.uuid4().hex
@@ -162,7 +163,7 @@ def process_download(con, path:str, headers:dict, sustech:bool, head:bool) -> No
                 response = parse_header(headers, 200) + b'\r\n' + file_content if not head else b'' + b'\r\n'
         else:
             response = parse_header(headers, 404) + b'\r\n'
-    con.sendall(response)
+    send(con, response, cipher)
 
 def process_icon(headers) -> bytes:
     res_header = parse_header(headers, 200)
@@ -312,3 +313,9 @@ def generate_multipart_response(file_path, ranges, boundary):
     response.append('--' + boundary + '--')
 
     return '\r\n'.join(response).encode()
+
+def send(con, data, cipher):
+    if encrypt:
+        con.sendall(cipher.encrypt(pad(data, 16, style='pkcs7')))
+    else:
+        con.sendall(data)
