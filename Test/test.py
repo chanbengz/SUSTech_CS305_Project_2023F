@@ -12,7 +12,7 @@ session2.headers.update({'Connection': 'keep-alive'})
 # session.headers.update({'Connection': 'close'})
 
 # Test chunked
-# session.headers.update({'Range': 'bytes=0-1,1-2,2-3'})
+session1.headers.update({'Range': 'bytes=0-10,20-35,35-100'})
 
 # Test upload
 # files = {'a.zip': open('Test/a.zip', 'rb'),'a.py': open('data/a.py', 'rb')}
@@ -21,7 +21,8 @@ session2.headers.update({'Connection': 'keep-alive'})
 # response = session.get('http://localhost:8080/client1/a.txt?chunked=1', headers=headers)
 
 # Test download
-response = session1.get('http://localhost:8080/client1/a.py', headers=headers)
+response = session1.get('http://localhost:8080/client1/a.txt', headers=headers)
+
 
 print(response)
 print("--------------------\n")

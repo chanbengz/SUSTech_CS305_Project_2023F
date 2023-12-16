@@ -139,7 +139,7 @@ def process_download(con, path:str, headers:dict, sustech:bool, head:bool) -> No
                     con.sendall(response)
                     return
                 if len(info) > 1:
-                    boundary = str(uuid.uuid4())
+                    boundary = uuid.uuid4().hex
                     headers['Content-Type'] = 'multipart/byteranges; boundary=' + boundary
                     response_body = generate_multipart_response(path, info, boundary)
                     print(response_body)
