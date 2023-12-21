@@ -227,6 +227,9 @@ def authenticate(headers):
                     headers['User'] = username
                 else:
                     raise
+            else:
+                cookie_database.execute(f"update cookies set create_time = {int(time.time())} where session_id = '{session_id}';")
+                cookie_database.commit()
     except:
         headers['User'] = None
         headers['WWW-Authenticate'] = 'Basic realm="Authorization Required"'
