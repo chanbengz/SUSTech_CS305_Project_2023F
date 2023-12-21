@@ -25,7 +25,8 @@ class RequestHandler:
 
     def handle(self):
         con = self.request
-        
+        first = True
+
         if encrypt:
             rsa_key = RSA.generate(2048)
             con.sendall(rsa_key.public_key().export_key())
@@ -70,19 +71,33 @@ class RequestHandler:
                 continue
 
             # Authentication and Cookie
-            headers = authenticate(headers)
+            if first:
+                headers = authenticate(headers)
+                first = False
+                if headers.get('WWW-Authenticate'):
+                    headers['Content-Length'] = 0
+                    self.send(parse_header(headers, 401) + b'\r\n')
+                    continue
 
             # Process request
             path, parameters = parse_path(path)
 
             if path.strip('/') == command[0]:
-                if method.upper() == 'GET':
+                if method.upper() != 'POST':
                     self.send(parse_header(headers, 405) + b'\r\n')
+                    continue
+                if 'path' not in parameters:
+                    headers['Content-Length'] = 0
+                    self.send(parse_header(headers, 400) + b'\r\n')
                     continue
                 self.send(process_upload(parameters['path'], headers, msgdata))
             elif path.strip('/') == command[1]:
-                if method.upper() == 'POST':
+                if method.upper() != 'POST':
                     self.send(parse_header(headers, 405) + b'\r\n')
+                    continue
+                if 'path' not in parameters:
+                    headers['Content-Length'] = 0
+                    self.send(parse_header(headers, 400) + b'\r\n')
                     continue
                 self.send(process_delete(parameters['path'], headers))
             else:

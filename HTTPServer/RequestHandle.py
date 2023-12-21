@@ -19,8 +19,8 @@ status_code = {
     505: 'HTTP Version Not Supported',
 }
 maxconnect = 100
-timeout = 120
-cookie_ttl = 3600
+timeout = 120      # 2 minutes
+cookie_ttl = 3600  # 1 hour
 command = ['upload', 'delete']
 encrypt = False
 
@@ -66,10 +66,13 @@ def parse_request(request:bytes) -> (str, str, str, dict, bytes):
     return method.decode(), path.decode(), protocol.decode(), result, data
 
 def process_delete(path, headers) -> bytes:
-    current_user = path.split('/')[0]
     headers['Content-Length'] = 0
-    if headers['User'] != current_user:
+    headers = authenticate(headers)
+    if headers.get('WWW-Authenticate'):
         return parse_header(headers, 401) + b'\r\n'
+    current_user = path.split('/')[0]
+    if headers['User'] != current_user:
+        return parse_header(headers, 403) + b'\r\n'
     path = 'data/' + path
     if os.path.exists(path):
         if os.path.isfile(path):
@@ -85,11 +88,14 @@ def process_delete(path, headers) -> bytes:
     return response + b'\r\n'
 
 def process_upload(path, headers, msgdata) -> bytes:
+    headers['Content-Length'] = 0
     path = path.strip('/')
+    headers = authenticate(headers)
+    if headers.get('WWW-Authenticate'):
+        return parse_header(headers, 401) + b'\r\n'
     current_user = path.split('/')[0]
     if headers['User'] != current_user:
-        return parse_header(headers, 401) + b'\r\n'
-    headers['Content-Length'] = 0
+        return parse_header(headers, 403) + b'\r\n'
     boundary = '--' + headers['Content-Type'].split('=')[1]
     path = 'data/' + path
     files = msgdata.split(boundary.encode())[1:-1]

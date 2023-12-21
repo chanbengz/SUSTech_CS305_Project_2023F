@@ -193,7 +193,7 @@
       deleteButton.textContent = 'Delete';
       deleteButton.addEventListener('click', function() {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/delete?path=' + file.path, true);
+        xhr.open('POST', '/delete?path=' + file.path, true);
         xhr.setRequestHeader('Cookie', document.cookie)
         xhr.onreadystatechange = function() {
           if (xhr.readyState === 4 && xhr.status === 200) {
