@@ -267,10 +267,8 @@ def render_homepage(path:str) -> bytes:
     return page.encode()
 
 def parse_range(range_header, entity_length):
-    if not range_header.startswith('bytes='):
-        return None
-    
-    range_header = range_header[6:]
+    if range_header.startswith('bytes='):  
+        range_header = range_header[6:]
     ranges = range_header.split(',')
     result = []
     for r in ranges:
