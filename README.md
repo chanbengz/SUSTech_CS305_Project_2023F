@@ -17,8 +17,11 @@ This is a HTTP File Manager, which is a web application that allows users to man
   - [x] File preview and download
   - [x] File upload
   - [x] File delete
+  - [x] Persistent connection
+  - [x] Concurrent request handling
+  - [x] Encryption (*Bonus*)
+  - [x] Breakpoint Transmission (*Bonus*)
   - [x] User-friendly interface
-  - [ ] RSA encryption
 
 ## Usage
 ```bash
