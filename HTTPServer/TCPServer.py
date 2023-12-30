@@ -1,6 +1,12 @@
 import socket, selectors, sys, threading, traceback
 from time import monotonic as time
 
+selector = selectors.DefaultSelector()
+if hasattr(selectors, 'PollSelector'):
+    selector = selectors.PollSelector()
+else:
+    selector = selectors.SelectSelector()
+
 class TCPServer:
     timeout = None
     def __init__(self, server_address, RequestHandlerClass):
@@ -21,14 +27,13 @@ class TCPServer:
     def serve_forever(self, poll_interval=0.5):
         self.__is_shut_down.clear()
         try:
-            with selectors.PollSelector() as selector:
-                selector.register(self, selectors.EVENT_READ)
-                while not self.__shutdown_request:
-                    ready = selector.select(poll_interval)
-                    if self.__shutdown_request:
-                        break
-                    if ready:
-                        self._handle_request_noblock()
+            selector.register(self, selectors.EVENT_READ)
+            while not self.__shutdown_request:
+                ready = selector.select(poll_interval)
+                if self.__shutdown_request:
+                    break
+                if ready:
+                    self._handle_request_noblock()
         finally:
             self.__shutdown_request = False
             self.__is_shut_down.set()
@@ -45,16 +50,15 @@ class TCPServer:
             timeout = min(timeout, self.timeout)
         if timeout is not None:
             deadline = time() + timeout
-        with selectors.PollSelector() as selector:
-            selector.register(self, selectors.EVENT_READ)
-            while True:
-                if selector.select(timeout):
-                    return self._handle_request_noblock()
-                else:
-                    if timeout is not None:
-                        timeout = deadline - time()
-                        if timeout < 0:
-                            return self.handle_timeout()
+        selector.register(self, selectors.EVENT_READ)
+        while True:
+            if selector.select(timeout):
+                return self._handle_request_noblock()
+            else:
+                if timeout is not None:
+                    timeout = deadline - time()
+                    if timeout < 0:
+                        return self.handle_timeout()
 
     def _handle_request_noblock(self):
         try:
