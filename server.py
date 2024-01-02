@@ -84,6 +84,7 @@ class RequestHandler:
 
             if path.strip('/') == command[0]:
                 if method.upper() != 'POST':
+                    headers['Content-Length'] = 0
                     self.send(parse_header(headers, 405) + b'\r\n')
                     continue
                 if 'path' not in parameters:
@@ -93,6 +94,7 @@ class RequestHandler:
                 self.send(process_upload(parameters['path'], headers, msgdata))
             elif path.strip('/') == command[1]:
                 if method.upper() != 'POST':
+                    headers['Content-Length'] = 0
                     self.send(parse_header(headers, 405) + b'\r\n')
                     continue
                 if 'path' not in parameters:
