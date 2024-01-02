@@ -104,6 +104,7 @@ class RequestHandler:
                 self.send(process_delete(parameters['path'], headers))
             else:
                 if method.upper() == 'POST':
+                    headers['Content-Length'] = 0
                     self.send(parse_header(headers, 405) + b'\r\n')
                     continue
                 sustech = 'SUSTech-HTTP' in parameters and parameters['SUSTech-HTTP'] == '1'
